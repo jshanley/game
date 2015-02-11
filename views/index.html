@@ -1,11 +1,130 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Game</title>
-    <link rel="stylesheet" href="/css/style.css" charset="utf-8">
-    <script src="/bower/d3/d3.js" charset="utf-8"></script>
+    <title>pong</title>
+    <script src="bower/d3/d3.js" charset="utf-8"></script>
+    <script src="js/pong-simple.js" charset="utf-8"></script>
+    <style media="screen">
+      #input-games {
+        width: 100px;
+      }
+
+      .axis line,
+      .axis path {
+        fill: transparent;
+        stroke: #333;
+        shape-rendering: crispEdges;
+      }
+
+      .bar {
+        fill: steelblue;
+      }
+
+      svg {
+        display: block;
+      }
+
+
+    </style>
   </head>
   <body>
-    <script src="js/game.js" charset="utf-8"></script>
+    <div>
+      <label for="input-games">Number of Games</label>
+      <input id="input-games" type="number" value="1000">
+    </div>
+    <div>
+      <label for="input-bias">Bias</label>
+      <input id="input-bias" type="number" value="0.5" min="0.0" max="1.0" step="0.001">
+    </div>
+    <input id="input-go" type="button" value="GO">
+
+  <script charset="utf-8">
+
+    var outerWidth = 960,
+        outerHeight = 500;
+
+    var margin = {
+      x: 80,
+      y: 20
+    };
+
+    var width = outerWidth - (2 * margin.x),
+        height = outerHeight - (2 * margin.y);
+
+
+    var svg = d3.select('body').append('svg')
+      .attr('width', outerWidth)
+      .attr('height', outerHeight)
+      .append('g')
+        .attr('transform', 'translate(' + margin.x + ',' + margin.y + ')');
+
+    var xScale = d3.scale.ordinal()
+      .domain(d3.range(2,22))
+      .rangeRoundBands([0,width], 0.15, 0.4);
+
+    var yScale = d3.scale.linear()
+      .domain([0,1])
+      .range([height,0]);
+
+    var xAxis = d3.svg.axis()
+      .scale(xScale)
+      .orient('bottom');
+
+    var yAxis = d3.svg.axis()
+      .scale(yScale)
+      .orient('left');
+
+    svg.append('g')
+      .attr('class', 'axis x')
+      .attr('transform', 'translate(' + 0 + ',' + height + ')')
+      .call(xAxis);
+
+    svg.append('g')
+      .attr('class', 'axis y')
+      .call(yAxis);
+
+    d3.select('#input-go').on('click', function() {
+      Pong.resetScores();
+      var n = +(d3.select('#input-games').node().value);
+      var scores = Pong.playGames(n);
+      viz(scores);
+    })
+
+    d3.select('#input-bias').on('input', function() {
+      var bias = this.value;
+      Pong.setBias(bias);
+    })
+
+    function viz(scores) {
+
+      var diffs = scores.map(function(score) {
+        return Math.abs(score[1] - score[0]);
+      });
+
+      var counts = d3.range(22).map(function() { return 0; });
+
+      for (var i = 0; i < diffs.length; i++) {
+        counts[diffs[i]]++
+      }
+
+      yScale.domain([0,d3.max(counts)]);
+
+      svg.select('.axis.y').call(yAxis)
+
+      var bars = svg.selectAll('.bar')
+        .data(counts);
+
+      bars.enter().append('rect')
+        .attr('class', 'bar')
+
+      bars
+        .attr('x', function(d,i) { return xScale(i); })
+        .attr('y', function(d) { return yScale(d); })
+        .attr('width', xScale.rangeBand())
+        .attr('height', function(d) { return height - yScale(d); })
+
+    }
+
+  </script>
   </body>
 </html>
